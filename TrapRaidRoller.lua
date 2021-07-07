@@ -17,9 +17,19 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
         end
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
+    elseif msg == "help" or msg == "h" then
+        print("|cFFFFFF00Trap Raid Roller V1.2.0")
+        print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
+        print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
+        print("|cFF67BCFFShow Raid Roller -- |r/trr show")
+        print("|cFF67BCFFHide Raid Roller -- |r/trr hide")
+        print("|cFF67BCFFReset Raid Roller -- |r/trr reset")
+        print("|cFF67BCFFRoll out loot -- |r/trr [Link an item with shift+click]")
     else
-        RaidRollerFrame:resetForRoll()
-        RaidRollerFrame:parseItemInfo(msg)
+        if IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
+            RaidRollerFrame:resetForRoll()
+            RaidRollerFrame:parseItemInfo(msg)
+        end
     end
 end
 
@@ -114,6 +124,14 @@ function RaidRollerFrame:parseItemInfo(msg)
                 statMessage = statMessage .. " and speed"
             else
                 statMessage = statMessage .. " with speed"
+                flag = true
+            end
+        end
+        if statTable.EMPTY_SOCKET_DOMINATION ~= nil then
+            if flag then
+                statMessage = statMessage .. " and a domination socket"
+            else
+                statMessage = statMessage .. " with a domination socket"
                 flag = true
             end
         end
