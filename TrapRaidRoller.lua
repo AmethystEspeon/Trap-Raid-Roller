@@ -18,7 +18,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
     elseif msg == "help" or msg == "h" then
-        print("|cFFFFFF00Trap Raid Roller V1.2.0")
+        print("|cFFFFFF00Trap Raid Roller V1.5.0")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
         print("|cFF67BCFFShow Raid Roller -- |r/trr show")
@@ -32,6 +32,11 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
         end
     end
 end
+
+BINDING_HEADER_TRAPRAIDROLLERKEYBINDS = "Trap Raid Roller"
+BINDING_NAME_SHOWORHIDE="Show/Hide Rolls"
+BINDING_NAME_RESETROLLS="Reset Rolls"
+
 
 function RaidRollerFrame:parseItemInfo(msg)
     --       1          2     3   4    5  6      7                  9           10             15
@@ -60,7 +65,29 @@ function RaidRollerFrame:parseItemInfo(msg)
 
     else --If it's a normal piece of gear
         local itemLocation = self:checkItemLocation(itemEquipLocation)
-        if itemSubType == "Miscellaneous" or itemEquipLocation == "INVTYPE_BAG" or itemEquipLocation == "INVTYPE_TABARD" or itemEquipLocation == "INVTYPE_SHIRT" or itemEquipLocation == "INVTYPE_CLOAK" then
+        local itemEdited
+        if itemLocation == "Weapon" then
+            --PRIMARY STATS
+            if statTable.ITEM_MOD_STRENGTH_SHORT ~= nil then
+                itemEdited = "Strength "
+            end
+
+            if statTable.ITEM_MOD_AGILITY_SHORT ~= nil then
+                itemEdited = "Agility "
+            end
+
+            if statTable.ITEM_MOD_INTELLIGENCE_SHORT ~= nil then
+                itemEdited = "Intelligence "
+            end
+            --Get rid of the 's' at the end of the weapon type
+            local weaponType,_,_,_,_,_ = string.match(itemSubType, "((%w-)(%-*)(%w-)(%s*)(%w+))s")
+            if weaponType == "Stave" then
+                itemEdited = itemEdited .. "Staff"
+            else
+                itemEdited = itemEdited .. weaponType
+            end
+            statMessage = itemEdited .. " "
+        elseif itemSubType == "Miscellaneous" or itemEquipLocation == "INVTYPE_BAG" or itemEquipLocation == "INVTYPE_TABARD" or itemEquipLocation == "INVTYPE_SHIRT" or itemEquipLocation == "INVTYPE_CLOAK" or itemEquipLocation == "INVTYPE_SHIELD" or itemEquipLocation == "INVTYPE_HOLDABLE" then
             statMessage = itemLocation .. " "
         else
             statMessage = itemSubType .. " " .. itemLocation .. " "
@@ -175,6 +202,12 @@ function RaidRollerFrame:checkItemLocation(itemEquipLoc)
     --    itemTypeLocation = "Tabard"
     elseif itemEquipLoc == "INVTYPE_ROBE" then
         itemTypeLocation = "Robe"
+    elseif itemEquipLoc == "INVTYPE_WEAPON" or itemEquipLoc == "INVTYPE_2HWEAPON" then
+        itemTypeLocation = "Weapon"
+    elseif itemEquipLoc == "INVTYPE_HOLDABLE" then
+        itemTypeLocation = "Offhand"
+    elseif itemEquipLoc == "INVTYPE_SHIELD" then
+        itemTypeLocation = "Shield"
     end
     return itemTypeLocation
 end
@@ -183,6 +216,7 @@ end
 
 --RaidRollerFrame.TEST_NAME = GetUnitName("player") This is for testing
 
+--GUI
 RaidRollerFrame:SetScript("OnEvent", function(self, event, ...)
     if ( event == "CHAT_MSG_SYSTEM" ) then
         local text = ...;
@@ -206,8 +240,8 @@ end)
 
 function RaidRollerFrame:OnLoad()
     self.titleFrame = CreateFrame("Frame", nil, self)
-    self.titleFrame:SetPoint("TOP",self,"TOP",-25,0)
-    self.titleFrame:SetSize(175,20)
+    self.titleFrame:SetPoint("TOP",self,"TOP")
+    self.titleFrame:SetSize(157,20)
     self:SetMovable(true)
     self.titleFrame:EnableMouse(true)
     self.titleFrame:RegisterForDrag("LeftButton")
@@ -219,7 +253,7 @@ function RaidRollerFrame:OnLoad()
     end)
     self:SetClampedToScreen(true)
     self.titleFrame.title = self.titleFrame:CreateFontString(nil,"ARTWORK","GameFontNormal",nil)
-    self.titleFrame.title:SetPoint("TOP",self.titleFrame,"CENTER",25,5)
+    self.titleFrame.title:SetPoint("TOP",self.titleFrame,"CENTER",0,5)
     self.titleFrame.title:SetText("Trap Raid Roller")
 
 
@@ -227,7 +261,7 @@ function RaidRollerFrame:OnLoad()
     RaidRollerFrame:RegisterEvent("CHAT_MSG_SYSTEM");
     local width = 200;
     self:SetSize(width, 150);
-    self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 100, -200);
+    self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 700, -200);
     self.Background = self:CreateTexture(nil, "BACKGROUND");
     self.Background:SetAllPoints(self);
     self.Background:SetColorTexture(0.0588, 0.0549, 0.102, 0.85);
@@ -235,6 +269,8 @@ function RaidRollerFrame:OnLoad()
     --Scroll Down Button
     self.scrollDownButton = CreateFrame("Button",nil,self)
     self.scrollDownButton:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Up")
+    self.scrollDownButton:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollDownButton-Highlight")
+    self.scrollDownButton:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Down")
     self.scrollDownButton:SetPoint("BOTTOMRIGHT",self,"BOTTOMRIGHT")
     self.scrollDownButton:SetSize(25,25)
     self.scrollDownButton:SetScript('OnClick', function ()
@@ -246,10 +282,32 @@ function RaidRollerFrame:OnLoad()
     --Scroll Up Button
     self.scrollUpButton = CreateFrame("Button",nil,self)
     self.scrollUpButton:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Up")
-    self.scrollUpButton:SetPoint("TOPRIGHT",self,"TOPRIGHT")
+    self.scrollUpButton:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Highlight")
+    self.scrollUpButton:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Down")
+    self.scrollUpButton:SetPoint("TOPRIGHT",self,"TOPRIGHT",0,-20)
     self.scrollUpButton:SetSize(25,25)
     self.scrollUpButton:SetScript('OnClick', function()
         self:scrollUp()
+    end)
+
+    --Exit Button
+    self.exitButton = CreateFrame("Button",nil,self)
+    self.exitButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+    self.exitButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    self.exitButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+    self.exitButton:SetPoint("TOPRIGHT",self,"TOPRIGHT")
+    self.exitButton:SetSize(25,25)
+    self.exitButton:SetScript('OnClick', function()
+        self:exitFrame()
+    end)
+
+    --Reset Button
+    self.resetButton = CreateFrame("Button",nil,self)
+    self.resetButton:SetNormalTexture("Interface\\PaperDollInfoFrame\\UI-GearManager-Undo")
+    self.resetButton:SetPoint("TOPLEFT",self,"TOPLEFT",2.2,-2.5)
+    self.resetButton:SetSize(18,18)
+    self.resetButton:SetScript('OnClick', function()
+        self:resetForRoll()
     end)
 end
 
@@ -305,7 +363,7 @@ function RaidRollerFrame:createRollResult()
     resultFrame.rollString:SetPoint("RIGHT",resultFrame,"RIGHT",-20,0);
     resultFrame.nameString:SetPoint("RIGHT",resultFrame.rollString,"LEFT",-10,0);
     resultFrame.nameString:SetJustifyH("LEFT")
-    resultFrame:SetSize(190,15)
+    resultFrame:SetSize(174,15)
     resultFrame.Background = resultFrame:CreateTexture(nil, "BACKGROUND")
     resultFrame.Background:SetAllPoints(resultFrame)
     resultFrame:EnableMouseWheel(true)
@@ -342,7 +400,7 @@ function RaidRollerFrame:updateResults()
     while #self.ResultFrames < #fullResultTable and #self.ResultFrames < 8 do
         self.ResultFrames[#self.ResultFrames + 1] = self:createRollResult()
         if #self.ResultFrames == 1 then
-            self.ResultFrames[1]:SetPoint("TOP",self.titleFrame,"BOTTOM",25,0)
+            self.ResultFrames[1]:SetPoint("TOP",self.titleFrame,"BOTTOM",-7,-3)
         else
             self.ResultFrames[#self.ResultFrames]:SetPoint("TOP",self.ResultFrames[#self.ResultFrames-1],"BOTTOM",0,0)
         end
@@ -401,6 +459,9 @@ function RaidRollerFrame:resetForRoll()
     end
 end
 
+function RaidRollerFrame:exitFrame()
+    RaidRollerFrame:Hide()
+end
 --[[
 TO DO: Add buttons and UI
 MAKE SURE SROLL OFFSET = 0 WHEN STARTING ROLL
