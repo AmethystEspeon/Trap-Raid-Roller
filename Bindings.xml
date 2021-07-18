@@ -1,0 +1,12 @@
+<Bindings>
+<Binding name="SHOWORHIDE" header="TRAPRAIDROLLERKEYBINDS">
+if RaidRollerFrame:IsVisible() then
+        RaidRollerFrame:Hide()
+    elseif not RaidRollerFrame:IsVisible() then
+        RaidRollerFrame:Show()
+    end
+</Binding>
+<Binding name="RESETROLLS">
+RaidRollerFrame:resetForRoll()
+</Binding>
+</Bindings>
