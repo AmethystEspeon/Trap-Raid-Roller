@@ -76,7 +76,7 @@ function RaidRollerFrame:parseItemInfo(msg)
                 itemEdited = "Agility "
             end
 
-            if statTable.ITEM_MOD_INTELLIGENCE_SHORT ~= nil then
+            if statTable.ITEM_MOD_INTELLECT_SHORT ~= nil then
                 itemEdited = "Intelligence "
             end
             --Get rid of the 's' at the end of the weapon type
