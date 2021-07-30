@@ -10,12 +10,12 @@ TrapTradeLootFrame = CreateFrame("Frame",nil, UIParent);
 local Prefix = "TrapRaidRoller"
 C_ChatInfo.RegisterAddonMessagePrefix(Prefix)
 
-
+--Used to see if you can roll out an item (if someone had rolled out an item right before you)
+local rerollReadyCheck = true 
 
 SLASH_TRAPRAIDROLLER1 = "/trr"
 SLASH_RAIDROLLER2 = "/trapraidroller"
 SlashCmdList["TRAPRAIDROLLER"] = function(msg)
-    
     if msg == "show" then
         RaidRollerFrame:Show()
     elseif msg == "hide" then
@@ -47,7 +47,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
     elseif msg == "help" or msg == "h" then
-        print("|cFFFFFF00Trap Raid Roller V2.0.0")
+        print("|cFFFFFF00Trap Raid Roller V2.0.1")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
         print("|cFF67BCFFShow Raid Roller -- |r/trr show")
@@ -481,6 +481,8 @@ TrapLootListFrame:SetScript("OnEvent",function(self,event,...)
             end
             if string.match(text, "roll (.+)") then --If someone rolled something out, reset the roll list
                 RaidRollerFrame:resetForRoll()
+                rerollReadyCheck = false
+                C_Timer.After(2, function() rerollReadyCheck = true end)
             end
 
         end
@@ -544,7 +546,9 @@ function TrapLootListFrame:checkLootFrame()
         
         --LINKING ROLL BUTTON TO ITEM PARSING
         self.RollButtons[i]:SetScript('OnClick', function()
-            if IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
+            if not rerollReadyCheck then
+                PlaySound(846)
+            elseif IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) and rerollReadyCheck then
                 RaidRollerFrame:parseItemInfo(self.PlayerLoot[i].item)
                 C_ChatInfo.SendAddonMessage(Prefix,"roll " .. self.PlayerLoot[i].item, "RAID")
             end
