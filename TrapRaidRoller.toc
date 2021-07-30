@@ -1,7 +1,7 @@
 ## Interface: 90005
 ## Title: Trap Raid Roller
 ## Notes: Provides an easy to use way to post items for roll and then check track the raid's rolls for it
-## Version: 2.0.0
+## Version: 2.0.1
 ## SavedVariables: TrapRaidRollerHidePickupFrame, TrapRaidRollerHideRolloutFrame
 
 TrapRaidRoller.lua
