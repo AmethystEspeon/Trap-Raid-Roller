@@ -1,10 +1,21 @@
 --[[Copyright (c) 2021, David Segal All rights reserved. Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met: Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution. Neither the name of the addon nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
+local function debugPrint(...)
+    print(...)
+end
+
 RaidRollerFrame = CreateFrame("Frame", nil, UIParent);
+TrapLootListFrame = CreateFrame("Frame", nil, UIParent);
+TrapTradeLootFrame = CreateFrame("Frame",nil, UIParent);
+local Prefix = "TrapRaidRoller"
+C_ChatInfo.RegisterAddonMessagePrefix(Prefix)
+
+
 
 SLASH_TRAPRAIDROLLER1 = "/trr"
 SLASH_RAIDROLLER2 = "/trapraidroller"
 SlashCmdList["TRAPRAIDROLLER"] = function(msg)
+    
     if msg == "show" then
         RaidRollerFrame:Show()
     elseif msg == "hide" then
@@ -15,16 +26,36 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
         elseif not RaidRollerFrame:IsVisible() then
             RaidRollerFrame:Show()
         end
+    elseif msg == "list" then
+        if TrapLootListFrame:IsVisible() then
+            TrapLootListFrame:Hide()
+            elseif not TrapLootListFrame:IsVisible() then
+            TrapLootListFrame:Show()
+        end
+    elseif msg == "togglePickup" then
+        if not TrapRaidRollerHidePickupFrame then
+            TrapRaidRollerHidePickupFrame = true
+        else
+            TrapRaidRollerHidePickupFrame = false
+        end
+    elseif msg == "toggleLootList" then
+        if not TrapRaidRollerHideRolloutFrame then
+            TrapRaidRollerHideRolloutFrame = true
+        else
+            TrapRaidRollerHideRolloutFrame = false
+        end
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
     elseif msg == "help" or msg == "h" then
-        print("|cFFFFFF00Trap Raid Roller V1.5.0")
+        print("|cFFFFFF00Trap Raid Roller V2.0.0")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
         print("|cFF67BCFFShow Raid Roller -- |r/trr show")
         print("|cFF67BCFFHide Raid Roller -- |r/trr hide")
         print("|cFF67BCFFReset Raid Roller -- |r/trr reset")
         print("|cFF67BCFFRoll out loot -- |r/trr [Link an item with shift+click]")
+        print("|cFF67BCFFToggle popup of On Pickup frame -- |r/trr togglePickup")
+        print("|cFF67BCFFToggle popup of Loot List frame -- |r/trr toggleLootList")
     else
         if IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
             RaidRollerFrame:resetForRoll()
@@ -34,8 +65,20 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
 end
 
 BINDING_HEADER_TRAPRAIDROLLERKEYBINDS = "Trap Raid Roller"
-BINDING_NAME_SHOWORHIDE="Show/Hide Rolls"
+BINDING_NAME_SHOWHIDEROLLS="Show/Hide Rolls"
 BINDING_NAME_RESETROLLS="Reset Rolls"
+BINDING_NAME_SHOWHIDELIST="Show or Hide Loot List"
+--TODO:
+--create a frame on load for officers to see loot on
+--create a yes/no frame for giving loot
+--RegisterEvent for picking up an item (Use CHAT_MSG_LOOT, look for "You receive loot: (%.+)|r.") then add the |r?
+--When you pick up an item: Check if it's equipable
+--If it is equipable, check its ilvl against currently equipped ilvl in the same slot
+--       Special case for trinkets
+--
+
+
+
 
 
 function RaidRollerFrame:parseItemInfo(msg)
@@ -76,7 +119,7 @@ function RaidRollerFrame:parseItemInfo(msg)
                 itemEdited = "Agility "
             end
 
-            if statTable.ITEM_MOD_INTELLECT_SHORT ~= nil then
+            if statTable.ITEM_MOD_INTELLIGENCE_SHORT ~= nil then
                 itemEdited = "Intelligence "
             end
             --Get rid of the 's' at the end of the weapon type
@@ -212,11 +255,67 @@ function RaidRollerFrame:checkItemLocation(itemEquipLoc)
     return itemTypeLocation
 end
 
-
+--In: Location. Out: InvSlotId
+function TrapTradeLootFrame:getItemSlot(pickedLoc)
+    --It is in the exact order of https://wowpedia.fandom.com/wiki/Enum.InventoryType
+    --debugPrint("pickedItemLoc in getItemSlot", pickedLoc)
+    if pickedLoc == "INVTYPE_HEAD" then
+        return 1
+    elseif pickedLoc == "INVTYPE_NECK" then
+        return 2
+    elseif pickedLoc == "INVTYPE_SHOULDER" then
+        return 3
+    elseif pickedLoc == "INVTYPE_BODY" then
+        return 4
+    elseif pickedLoc == "INVTYPE_CHEST" then
+        return 5
+    elseif pickedLoc == "INVTYPE_WAIST" then
+        return 6
+    elseif pickedLoc == "INVTYPE_LEGS" then
+        return 7
+    elseif pickedLoc == "INVTYPE_FEET" then
+        return 8
+    elseif pickedLoc == "INVTYPE_WRIST" then
+        return 9
+    elseif pickedLoc == "INVTYPE_HAND" then
+        return 10
+    elseif pickedLoc == "INVTYPE_FINGER" then
+        return 11 --Remember to check 12 for second ring
+    elseif pickedLoc == "INVTYPE_TRINKET" then
+        return 13 --Remember to check 14 for other trinket
+    elseif pickedLoc == "INVTYPE_WEAPON" then
+        return 16 --Remember to check 17 if dual wielding
+    elseif pickedLoc == "INVTYPE_SHIELD" then
+        return 17
+    elseif pickedLoc == "INVTYPE_RANGED" then
+        return 16
+    elseif pickedLoc == "INVTYPE_CLOAK" then
+        return 15
+    elseif pickedLoc == "INVTYPE2HWEAPON" then
+        return 16
+    elseif pickedLoc == "INVTYPE_TABARD" then
+        return 19
+    elseif pickedLoc == "INVTYPE_ROBE" then
+        return 5
+    elseif pickedLoc == "INVTYPE_WEAPONMAINHAND" then
+        return 16
+    elseif pickedLoc == "INVTYPE_WEAPONOFFHAND" then
+        return 16
+    elseif pickedLoc == "INVTYPE_HOLDABLE" then
+        return 17
+    elseif pickedLoc == "INVTYPE_RANGEDRIGHT" then
+        return 16 --what even is this?
+    else
+        return 0 --If it's not one of these then it will just stop
+    end
+end
 
 --RaidRollerFrame.TEST_NAME = GetUnitName("player") This is for testing
 
 --GUI
+--------------------------------------------------------------
+--------------------------------------------------------------
+
 RaidRollerFrame:SetScript("OnEvent", function(self, event, ...)
     if ( event == "CHAT_MSG_SYSTEM" ) then
         local text = ...;
@@ -238,6 +337,7 @@ RaidRollerFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
+--Roll Frame Creation
 function RaidRollerFrame:OnLoad()
     self.titleFrame = CreateFrame("Frame", nil, self)
     self.titleFrame:SetPoint("TOP",self,"TOP")
@@ -254,7 +354,7 @@ function RaidRollerFrame:OnLoad()
     self:SetClampedToScreen(true)
     self.titleFrame.title = self.titleFrame:CreateFontString(nil,"ARTWORK","GameFontNormal",nil)
     self.titleFrame.title:SetPoint("TOP",self.titleFrame,"CENTER",0,5)
-    self.titleFrame.title:SetText("Trap Raid Roller")
+    self.titleFrame.title:SetText("TRR Rolls")
 
 
 
@@ -318,6 +418,310 @@ RaidRollerFrame.OffRolls = {}
 RaidRollerFrame.MogRolls = {}
 RaidRollerFrame.ResultFrames = {}
 RaidRollerFrame.ScrollOffset = 0
+
+--Loot List Frame Creation
+function TrapLootListFrame:OnLoad()
+    self.titleFrame = CreateFrame("Frame",nil,self)
+    self.titleFrame:SetPoint("TOP",self,"TOP")
+    self.titleFrame:SetSize(157,20)
+    self:SetMovable(true)
+    self.titleFrame:EnableMouse(true)
+    self.titleFrame:RegisterForDrag("LeftButton")
+    self.titleFrame:SetScript("OnDragStart", function ()
+        self:StartMoving()
+    end)
+    self.titleFrame:SetScript("OnDragStop", function()
+        self:StopMovingOrSizing()
+    end)
+    self:SetClampedToScreen(true)
+    self.titleFrame.title = self.titleFrame:CreateFontString(nil,"ARTWORK","GameFontNormal",nil)
+    self.titleFrame.title:SetPoint("TOP",self.titleFrame,"CENTER",0,5)
+    self.titleFrame.title:SetText("TRR Loot List")
+    self:SetSize(450,430);
+    self:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -300, -200);
+    self.Background = self:CreateTexture(nil,"BACKGROUND");
+    self.Background:SetAllPoints(self);
+    self.Background:SetColorTexture(0.0588, 0.0549, 0.102, 0.85);
+    self:Hide()
+
+    self.exitButton = CreateFrame("Button",nil,self)
+    self.exitButton:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+    self.exitButton:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    self.exitButton:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+    self.exitButton:SetPoint("TOPRIGHT",self,"TOPRIGHT")
+    self.exitButton:SetSize(30,30)
+    self.exitButton:SetScript('OnClick', function()
+        self:Hide()
+    end)
+
+
+    self:RegisterEvent("CHAT_MSG_ADDON")
+end
+
+TrapLootListFrame:OnLoad();
+
+TrapLootListFrame.PlayerLoot = {}
+TrapLootListFrame.ListFrames = {}
+TrapLootListFrame.ButtonBackgrounds = {}
+TrapLootListFrame.RollButtons = {}
+--TrapLootListFrame.RemoveButtons = {}
+
+--Loot List Getting Info
+TrapLootListFrame:SetScript("OnEvent",function(self,event,...)
+    if( event == "CHAT_MSG_ADDON" ) then
+        local recPrefix, text, _, sender = ...;
+        if recPrefix == Prefix then
+            if string.match(text, "add (.+)") then --If we're adding something, add it
+                self:addPlayerLoot(sender, string.match(text, "add (.+)"))
+                if IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) and not TrapRaidRollerHideRolloutFrame then
+                    self:Show()
+                end
+                --debugPrint("Incoming Text: ", text)
+                --debugPrint("From Player: ", sender)    
+            end
+            if string.match(text, "roll (.+)") then --If someone rolled something out, reset the roll list
+                RaidRollerFrame:resetForRoll()
+            end
+
+        end
+    end
+end)
+
+function TrapLootListFrame:addPlayerLoot(player, item)
+    --debugPrint("player to add:", player)
+    --debugPrint("item to add:", item)
+    if #self.PlayerLoot >= 8 then
+        table.remove(TrapLootListFrame.PlayerLoot,1)
+    end
+    table.insert(TrapLootListFrame.PlayerLoot, {["sender"] = player, ["item"] = item});
+    self:checkLootFrame()
+
+end
+
+--Updates loot list frame
+function TrapLootListFrame:checkLootFrame()
+    while #self.ListFrames < #self.PlayerLoot and #self.ListFrames < 8 do --If there are more things to show than frames
+        self.ListFrames[#self.ListFrames + 1] = self:createListFrame()
+        self.ButtonBackgrounds[#self.ButtonBackgrounds+1] = self:createButtonBackground()
+        self.RollButtons[#self.RollButtons+1] = self:createListRollButton()
+        if #self.ListFrames == 1 then
+            self.ListFrames[1]:SetPoint("TOP",self.titleFrame,"BOTTOMLEFT", 55,0)
+            self.ButtonBackgrounds[1]:SetPoint("LEFT",self.ListFrames[1],"RIGHT",0,0)
+            self.RollButtons[1]:SetPoint("LEFT", self.ButtonBackgrounds[1],"LEFT", 0,-4)
+        else
+            self.ListFrames[#self.ListFrames]:SetPoint("TOP",self.ListFrames[#self.ListFrames-1],"BOTTOM",0,0)
+            self.ButtonBackgrounds[#self.ButtonBackgrounds]:SetPoint("LEFT",self.ListFrames[#self.ListFrames],"RIGHT",0,0)
+            self.RollButtons[#self.RollButtons]:SetPoint("LEFT", self.ButtonBackgrounds[#self.ButtonBackgrounds],"LEFT", 0,-4)
+        end
+    end
+    for i = #self.ListFrames, 1, -1 do
+        if self.ListFrames[i].nameString == nil then
+            self.ListFrames[i]:Hide()
+            self.ButtonBackgrounds[i]:Hide()
+            self.RollButtons[i]:Hide()
+        end
+    end
+    for i = 1, #self.PlayerLoot, 1 do
+        if i%2 == 0 then
+            self.ListFrames[i].Background:SetColorTexture(0.1388,0.1349,0.182,0.85)
+            self.ButtonBackgrounds[i].Background:SetColorTexture(0.1388,0.1349,0.182,0.85)
+        else
+            self.ListFrames[i].Background:SetColorTexture(0.0588, 0.0549, 0.102, 0.85);
+            self.ButtonBackgrounds[i].Background:SetColorTexture(0.0588, 0.0549, 0.102, 0.85);
+
+        end
+        self.ListFrames[i].nameString:SetText(self.PlayerLoot[i].sender)
+        self.ListFrames[i].itemString:SetText(self.PlayerLoot[i].item)
+        self.ListFrames[i]:HookScript("OnEnter",function()
+            GameTooltip:SetOwner(TrapLootListFrame.ListFrames[i], "ANCHOR_TOP")
+            GameTooltip:SetHyperlink(self.PlayerLoot[i].item)
+            GameTooltip:Show()
+        end)
+        
+        TrapLootListFrame.ListFrames[i]:HookScript("OnLeave",function()
+            GameTooltip:Hide()
+        end)
+        
+        --LINKING ROLL BUTTON TO ITEM PARSING
+        self.RollButtons[i]:SetScript('OnClick', function()
+            if IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
+                RaidRollerFrame:parseItemInfo(self.PlayerLoot[i].item)
+                C_ChatInfo.SendAddonMessage(Prefix,"roll " .. self.PlayerLoot[i].item, "RAID")
+            end
+        end)
+
+    end
+end
+
+--Creating a list frame to put loot in.
+function TrapLootListFrame:createListFrame()
+    local listFrame = CreateFrame("Frame",nil,self)
+    listFrame.nameString = listFrame:CreateFontString(nil,"ARTWORK","GameFontNormalLarge",nil)
+    listFrame.itemString = listFrame:CreateFontString(nil,"ARTWORK","GameFontNormalLarge",nil)
+    listFrame.nameString:SetPoint("LEFT",listFrame,"LEFT",5,0)
+    listFrame.itemString:SetPoint("CENTER",listFrame,"CENTER",50,0)
+    listFrame:SetSize(400,50)
+    listFrame.Background = listFrame:CreateTexture(nil, "BACKGROUND")
+    listFrame.Background:SetAllPoints(listFrame)
+    return listFrame    
+end
+
+--Creating a background for the buttons on the loot list frame
+function TrapLootListFrame:createButtonBackground()
+    local buttonBackground = CreateFrame("Frame",nil,self)
+    buttonBackground:SetSize(48,50)
+    buttonBackground.Background = buttonBackground:CreateTexture(nil, "BACKGROUND")
+    buttonBackground.Background:SetAllPoints(buttonBackground)
+    return buttonBackground
+end
+
+--Creating the Roll button for the LootListFrame
+function TrapLootListFrame:createListRollButton()
+    --debugPrint("Roll Button for List was created")
+    local rollButton = CreateFrame("Button",nil,self)
+    rollButton:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Up")
+    rollButton:SetHighlightTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Highlight")
+    rollButton:SetPushedTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Down")
+    rollButton:SetSize(35,35)
+
+    return rollButton
+end
+
+
+--[[UNUSED
+--Creating the remove button for the LootListFrame
+function TrapLootListFrame:createRemoveButton()
+    local removeButton = CreateFrame("Button",nil,self)
+    removeButton:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
+    removeButton:SetHighlightTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Highlight")
+    removeButton:SetPushedTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Down")
+    removeButton:SetSize(35,35)
+
+    return removeButton
+end
+--]]
+
+--Trade Confirmation Frame Creation
+function TrapTradeLootFrame:OnLoad()
+    --Main Text (with drag)
+    self.lootLink = "";
+    self.textFrame = CreateFrame("Frame",nil,self)
+    self.textFrame:SetPoint("TOP",self,"TOP")
+    self.textFrame:SetSize(210,40)
+    self.textFrame:EnableMouse(true)
+    self.textFrame:RegisterForDrag("LeftButton")
+    self.textFrame:SetScript("OnDragStart", function ()
+        self:StartMoving()
+    end)
+    self.textFrame:SetScript("OnDragStop", function()
+        self:StopMovingOrSizing()
+    end)
+    self.textFrame.text = self.textFrame:CreateFontString(nil,"ARTWORK","GameFontNormal",nil)
+    self.textFrame.text:SetPoint("TOP",self.textFrame,"TOP",0,-5)
+    self.textFrame.text:SetText("Do you want to let Raid Assists\nknow to roll out this item?")
+    --Main Options
+    self:RegisterEvent("CHAT_MSG_LOOT")
+    self:SetClampedToScreen(true)
+    self:SetMovable(true)
+    self:SetSize(210,100);
+    self:SetPoint("CENTER", UIParent, "CENTER", 0, 0);
+    self.Background = self:CreateTexture(nil,"DIALOGUE");
+    self.Background:SetAllPoints(self);
+    self.Background:SetColorTexture(0.0588, 0.0549, 0.102, 0.85);
+    self:Hide()
+    
+    --Acquired item text frame
+    self.acquiredTextFrame = CreateFrame("Frame",nil,self)
+    self.acquiredTextFrame:SetPoint("TOP",self.textFrame,"BOTTOM",0,0)
+    self.acquiredTextFrame.text = self.acquiredTextFrame:CreateFontString(nil,"ARTWORK","GameFontNormal",nil)
+    self.acquiredTextFrame.text:SetPoint("TOP",self.acquiredTextFrame,"CENTER",0,10)
+    self.acquiredTextFrame:EnableMouse(false)
+
+    --Yes Checkmark Button/eve
+    self.checkmark = CreateFrame("Button",nil,self)
+    self.checkmark:SetNormalTexture("Interface\\RaidFrame\\ReadyCheck-Ready")
+    self.checkmark:SetPoint("BOTTOMLEFT",self,"BOTTOMLEFT",40,10)
+    self.checkmark:SetSize(30,30)
+    self.checkmark:SetScript('OnClick', function()
+        --debugPrint("Attempt message through addon: ", UnitName("player") .. " " .. self.lootLink)
+        C_ChatInfo.SendAddonMessage(Prefix, "add " .. self.lootLink, "RAID")
+        self:Hide()
+    end)
+
+    --No Checkmark Button
+    self.xMark = CreateFrame("Button",nil,self)
+    self.xMark:SetNormalTexture("Interface\\RaidFrame\\ReadyCheck-NotReady")
+    self.xMark:SetPoint("BOTTOMRIGHT",self,"BOTTOMRIGHT",-40,10)
+    self.xMark:SetSize(30,30)
+    self.xMark:SetScript('OnClick', function()
+        self:Hide()
+    end)
+
+end
+
+--Trade Confirmation Frame Event to pop up and ask
+TrapTradeLootFrame:SetScript("OnEvent", function(self,event,...)
+    if ( event == "CHAT_MSG_LOOT") and not TrapRaidRollerHidePickupFrame then
+        --Ignore the entire script if the player isn't in a raid.
+        if not IsInRaid() then
+            return
+        end
+        --debugPrint("Got CHAT MESSAGE")
+        local text = ...;
+        self.lootLink = string.match(text, "You receive item: (.+|r)")
+        local skip = true
+        local equipped1ItemLink, equipped1iLvl, equipped1Location
+        local equipped2ItemLink, equipped2iLvl, equipped2Location
+        if IsEquippableItem(self.lootLink) then
+            --debugPrint("this item is equippable", self.lootLink)
+            local _, pickedItemLink, pickedItemQuality, pickediLvl, _, _, _, _, pickedLocation = GetItemInfo(self.lootLink)
+
+            --If the item isn't epic or higher, exit the script
+            if pickedItemQuality >= 4 then
+                return
+            end
+
+            --Find what slot it is
+            --debugPrint("pickedLocation right before changing to slotID", pickedLocation)
+            local pickedSlotID = self:getItemSlot(pickedLocation)
+            --debugPrint("pickedSlotID",pickedSlotID)
+            --If it isn't a slot that isn't comparable (ie: a bag, which is equippable) then skip this
+            if pickedSlotID ~= 0 then 
+                _, equipped1ItemLink, _, equipped1iLvl, _, _, _, _, equipped1Location = GetItemInfo(GetInventoryItemLink("player",pickedSlotID))
+                 --if it's a trinket/ring you need to compare both
+                if pickedSlotID == 11 or pickedSlotID == 13 or (IsDualWielding() and pickedSlotID == 16) then    
+                    skip = false
+                    --Print("Entering weapon dual wield",skip, pickedSlotID)
+                    _, equipped2ItemLink, _, equipped2iLvl, _, _, _, equipped2Location = GetItemInfo(GetInventoryItemLink("player",pickedSlotID+1))
+                end
+
+                --debugPrint("Is it seeing an empty slot?", skip)
+                if pickediLvl <= equipped1iLvl or (skip == false and pickediLvl <= equipped1iLvl and pickediLvl <= equipped2iLvl) then
+                    self.acquiredTextFrame.text:SetText(self.lootLink)
+                    local width = self.acquiredTextFrame.text:GetWidth()
+                    local height = self.acquiredTextFrame.text:GetHeight()
+                    --debugPrint("Width and Height of text for TTLF", width, height)
+                    TrapTradeLootFrame.acquiredTextFrame:SetSize(width,height)
+                    self:Show()
+                    self.acquiredTextFrame:HookScript("OnEnter",function()
+                        --debugPrint("On Enter Being Called. This is lootLink", TrapTradeLootFrame.lootLink)
+                        if(TrapTradeLootFrame.lootLink ~= nil) then
+                            GameTooltip:SetOwner(TrapTradeLootFrame.acquiredTextFrame.text, "ANCHOR_TOP")
+                            GameTooltip:SetHyperlink(TrapTradeLootFrame.lootLink)
+                            GameTooltip:Show()
+                        end
+                    end)
+                    
+                    TrapTradeLootFrame.acquiredTextFrame:HookScript("OnLeave",function()
+                        GameTooltip:Hide()
+                    end)
+                end
+            end
+        end
+    end
+end)
+
+TrapTradeLootFrame:OnLoad();
 
 function RaidRollerFrame:addMainRoll(name,number)
     for _, value in pairs(self.MainRolls) do
@@ -462,82 +866,3 @@ end
 function RaidRollerFrame:exitFrame()
     RaidRollerFrame:Hide()
 end
---[[
-TO DO: Add buttons and UI
-MAKE SURE SROLL OFFSET = 0 WHEN STARTING ROLL
-
-
-{
-    {["name"] = Guill, ["roll"] = 99},
-    {["name"] = Dialya, ["roll"] = 47},
-}
-
-for index, value in pairs(myValues) do
-    print(index, value);
-end
-
-function RaidRollerFrame:ResetRolls()
-    RaidRollerFrame.MainRolls = {}
-    RaidRollerFrame.OffRolls = {}
-    self.MogRolls = {}
-end
-
-RaidRollerFrame["MyFunc"] = function(self)
-end
-
-
-foo:bar(baz)
---is same as
-foo.bar(foo, baz);
-
-local tab = {
-    {
-        Guill = "Guill",
-        roll = 1000,
-    },
-    {
-        name = ""
-    }
-}
-
-myRoll = tab[1];
-tab.name
-
-local myValues = { 1, 2, 3, 4, 5, foo = "bar" }
-local myValues = {
-    [1] = 1,
-    [2] = 2,
-    [3] = 3,
-    [4] = 4,
-    [5] = 5,
-    [7] = 7,
-    ["foo"] = "bar",
-}
-
--- Only ordered (not "bar" or 7)
-for index, value in ipairs(myValues) do
-    print(index, value);
-end
-
--- Everything (including "bar")
-for index, value in pairs(myValues) do
-    print(index, value);
-end
-
-
-function getOrderedRolls(allRolls)
-    local orders = { "Guill", "Dialya" };
-    for name, roll in pairs(allRolls) do
-        -- table.insert(orders, name);
-        orders[#orders + 1] = { name = name, roll = roll };
-    end
-    table.sort(orders, function(value1, value2)
-        return value1 > value2;
-    end)
-end
-
-getOrderedRolls({
-    ["Guill"] = 100,
-    ["Dialya"] = 1,
-})
-]]--
