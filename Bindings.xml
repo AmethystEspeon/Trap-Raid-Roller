@@ -1,5 +1,5 @@
 <Bindings>
-<Binding name="SHOWORHIDE" header="TRAPRAIDROLLERKEYBINDS">
+<Binding name="SHOWHIDEROLLS" header="TRAPRAIDROLLERKEYBINDS">
 if RaidRollerFrame:IsVisible() then
         RaidRollerFrame:Hide()
     elseif not RaidRollerFrame:IsVisible() then
@@ -8,5 +8,12 @@ if RaidRollerFrame:IsVisible() then
 </Binding>
 <Binding name="RESETROLLS">
 RaidRollerFrame:resetForRoll()
+</Binding>
+<Binding name="SHOWHIDELIST">
+if TrapLootListFrame:IsVisible() then
+        TrapLootListFrame:Hide()
+    elseif not TrapLootListFrame:IsVisible() then
+            TrapLootListFrame:Show()
+        end
 </Binding>
 </Bindings>
