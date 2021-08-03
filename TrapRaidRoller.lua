@@ -47,7 +47,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
     elseif msg == "help" or msg == "h" then
-        print("|cFFFFFF00Trap Raid Roller V2.0.1")
+        print("|cFFFFFF00Trap Raid Roller V2.0.2")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
         print("|cFF67BCFFShow Raid Roller -- |r/trr show")
@@ -672,7 +672,8 @@ TrapTradeLootFrame:SetScript("OnEvent", function(self,event,...)
         end
         --debugPrint("Got CHAT MESSAGE")
         local text = ...;
-        self.lootLink = string.match(text, "You receive item: (.+|r)")
+        self.lootLink = string.match(text, "You receive loot: (.+|r)")
+        --self.lootLink = string.match(text, "You receive item: (.+|r)") --USED FOR BUY TESTING
         local skip = true
         local equipped1ItemLink, equipped1iLvl, equipped1Location
         local equipped2ItemLink, equipped2iLvl, equipped2Location
