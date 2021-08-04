@@ -779,7 +779,7 @@ TrapTradeLootFrame:SetScript("OnEvent", function(self,event,...)
             end
         else
             local tradedLoot = string.match(text, "You receive item: (.+|r)") --Used by trading
-            if tradedLoot and IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) and C_Item.GetItemQualityByID(tradedLoot) >= 4 then
+            if tradedLoot and IsEquippableItem(tradedLoot) and IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) and C_Item.GetItemQualityByID(tradedLoot) >= 4 then
                 local alreadyAdded = false
                 local somethingAdded = false
                 for i = 1, #self.items, 1 do
