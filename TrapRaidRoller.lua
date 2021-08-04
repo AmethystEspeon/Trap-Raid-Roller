@@ -11,7 +11,7 @@ local Prefix = "TrapRaidRoller"
 C_ChatInfo.RegisterAddonMessagePrefix(Prefix)
 
 --Used to see if you can roll out an item (if someone had rolled out an item right before you)
-local rerollReadyCheck = true 
+local rerollReadyCheck = true
 
 SLASH_TRAPRAIDROLLER1 = "/trr"
 SLASH_RAIDROLLER2 = "/trapraidroller"
@@ -47,7 +47,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
     elseif msg == "help" or msg == "h" then
-        print("|cFFFFFF00Trap Raid Roller V2.0.3")
+        print("|cFFFFFF00Trap Raid Roller V2.1.0")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
         print("|cFF67BCFFShow Raid Roller -- |r/trr show")
@@ -605,10 +605,13 @@ function TrapLootListFrame:createRemoveButton()
 end
 --]]
 
+TrapTradeLootFrame.TradeTable = {}
+
 --Trade Confirmation Frame Creation
 function TrapTradeLootFrame:OnLoad()
     --Main Text (with drag)
     self.lootLink = "";
+    self.fromTable = false
     self.textFrame = CreateFrame("Frame",nil,self)
     self.textFrame:SetPoint("TOP",self,"TOP")
     self.textFrame:SetSize(210,40)
@@ -625,6 +628,7 @@ function TrapTradeLootFrame:OnLoad()
     self.textFrame.text:SetText("Do you want to let Raid Assists\nknow to roll out this item?")
     --Main Options
     self:RegisterEvent("CHAT_MSG_LOOT")
+    self:RegisterEvent("TRADE_ACCEPT_UPDATE") --Checking to see if the item you got traded already is on the list
     self:SetClampedToScreen(true)
     self:SetMovable(true)
     self:SetSize(210,100);
@@ -649,7 +653,30 @@ function TrapTradeLootFrame:OnLoad()
     self.checkmark:SetScript('OnClick', function()
         --debugPrint("Attempt message through addon: ", UnitName("player") .. " " .. self.lootLink)
         C_ChatInfo.SendAddonMessage(Prefix, "add " .. self.lootLink, "RAID")
+        if self.fromTable then table.remove(TrapTradeLootFrame.TradeTable,1) end
         self:Hide()
+        if #self.TradeTable > 0 then
+            self.fromTable = true
+            self.lootLink = self.TradeTable[1].item
+            self.acquiredTextFrame.text:SetText(self.lootLink)
+            local width = self.acquiredTextFrame.text:GetWidth()
+            local height = self.acquiredTextFrame.text:GetHeight()
+            --debugPrint("Width and Height of text for TTLF", width, height)
+            TrapTradeLootFrame.acquiredTextFrame:SetSize(width,height)
+            self:Show()
+            self.acquiredTextFrame:HookScript("OnEnter",function()
+                --debugPrint("On Enter Being Called. This is lootLink", TrapTradeLootFrame.lootLink)
+                if(TrapTradeLootFrame.lootLink ~= nil) then
+                    GameTooltip:SetOwner(TrapTradeLootFrame.acquiredTextFrame.text, "ANCHOR_TOP")
+                    GameTooltip:SetHyperlink(TrapTradeLootFrame.lootLink)
+                    GameTooltip:Show()
+                end
+            end)
+                
+            TrapTradeLootFrame.acquiredTextFrame:HookScript("OnLeave",function()
+                GameTooltip:Hide()
+            end)
+        end
     end)
 
     --No Checkmark Button
@@ -658,12 +685,37 @@ function TrapTradeLootFrame:OnLoad()
     self.xMark:SetPoint("BOTTOMRIGHT",self,"BOTTOMRIGHT",-40,10)
     self.xMark:SetSize(30,30)
     self.xMark:SetScript('OnClick', function()
+        if self.fromTable then table.remove(TrapTradeLootFrame.TradeTable,1) end
         self:Hide()
+        if #self.TradeTable > 0 then
+            self.fromTable = true
+            self.lootLink = self.TradeTable[1].item
+            self.acquiredTextFrame.text:SetText(self.lootLink)
+            local width = self.acquiredTextFrame.text:GetWidth()
+            local height = self.acquiredTextFrame.text:GetHeight()
+            --debugPrint("Width and Height of text for TTLF", width, height)
+            TrapTradeLootFrame.acquiredTextFrame:SetSize(width,height)
+            self:Show()
+            self.acquiredTextFrame:HookScript("OnEnter",function()
+                --debugPrint("On Enter Being Called. This is lootLink", TrapTradeLootFrame.lootLink)
+                if(TrapTradeLootFrame.lootLink ~= nil) then
+                    GameTooltip:SetOwner(TrapTradeLootFrame.acquiredTextFrame.text, "ANCHOR_TOP")
+                    GameTooltip:SetHyperlink(TrapTradeLootFrame.lootLink)
+                    GameTooltip:Show()
+                end
+            end)
+                
+            TrapTradeLootFrame.acquiredTextFrame:HookScript("OnLeave",function()
+                GameTooltip:Hide()
+            end)
+        end
+
     end)
 
 end
 
 --Trade Confirmation Frame Event to pop up and ask
+TrapTradeLootFrame.items = {} --the possible items
 TrapTradeLootFrame:SetScript("OnEvent", function(self,event,...)
     if ( event == "CHAT_MSG_LOOT") and not TrapRaidRollerHidePickupFrame then
         --Ignore the entire script if the player isn't in a raid.
@@ -672,56 +724,128 @@ TrapTradeLootFrame:SetScript("OnEvent", function(self,event,...)
         end
         --debugPrint("Got CHAT MESSAGE")
         local text = ...;
-        self.lootLink = string.match(text, "You receive loot: (.+|r)")
-        --self.lootLink = string.match(text, "You receive item: (.+|r)") --USED FOR BUY TESTING
-        local skip = true
-        local equipped1ItemLink, equipped1iLvl, equipped1Location
-        local equipped2ItemLink, equipped2iLvl, equipped2Location
-        if IsEquippableItem(self.lootLink) then
-            --debugPrint("this item is equippable", self.lootLink)
-            local _, pickedItemLink, pickedItemQuality, pickediLvl, _, _, _, _, pickedLocation = GetItemInfo(self.lootLink)
+        local pickedUpLoot = string.match(text, "You receive loot: (.+|r)")
+        if pickedUpLoot then
+            local skip = true
+            local equipped1ItemLink, equipped1iLvl, equipped1Location
+            local equipped2ItemLink, equipped2iLvl, equipped2Location
+            if IsEquippableItem(pickedUpLoot) then
+                --debugPrint("this item is equippable", self.lootLink)
+                local _, pickedItemLink, pickedItemQuality, pickediLvl, _, _, _, _, pickedLocation = GetItemInfo(pickedUpLoot)
 
-            --If the item isn't epic or higher, exit the script
-            if pickedItemQuality >= 4 then
-                return
-            end
-
-            --Find what slot it is
-            --debugPrint("pickedLocation right before changing to slotID", pickedLocation)
-            local pickedSlotID = self:getItemSlot(pickedLocation)
-            --debugPrint("pickedSlotID",pickedSlotID)
-            --If it isn't a slot that isn't comparable (ie: a bag, which is equippable) then skip this
-            if pickedSlotID ~= 0 then 
-                _, equipped1ItemLink, _, equipped1iLvl, _, _, _, _, equipped1Location = GetItemInfo(GetInventoryItemLink("player",pickedSlotID))
-                 --if it's a trinket/ring you need to compare both
-                if pickedSlotID == 11 or pickedSlotID == 13 or (IsDualWielding() and pickedSlotID == 16) then    
-                    skip = false
-                    --Print("Entering weapon dual wield",skip, pickedSlotID)
-                    _, equipped2ItemLink, _, equipped2iLvl, _, _, _, equipped2Location = GetItemInfo(GetInventoryItemLink("player",pickedSlotID+1))
+                --If the item isn't epic or higher, exit the script
+                if pickedItemQuality >= 4 then
+                    return
                 end
 
-                --debugPrint("Is it seeing an empty slot?", skip)
-                if pickediLvl <= equipped1iLvl or (skip == false and pickediLvl <= equipped1iLvl and pickediLvl <= equipped2iLvl) then
-                    self.acquiredTextFrame.text:SetText(self.lootLink)
+                --Find what slot it is
+                --debugPrint("pickedLocation right before changing to slotID", pickedLocation)
+                local pickedSlotID = self:getItemSlot(pickedLocation)
+                --debugPrint("pickedSlotID",pickedSlotID)
+                --If it isn't a slot that isn't comparable (ie: a bag, which is equippable) then skip this
+                if pickedSlotID ~= 0 then 
+                    _, equipped1ItemLink, _, equipped1iLvl, _, _, _, _, equipped1Location = GetItemInfo(GetInventoryItemLink("player",pickedSlotID))
+                     --if it's a trinket/ring you need to compare both
+                    if pickedSlotID == 11 or pickedSlotID == 13 or (IsDualWielding() and pickedSlotID == 16) then    
+                        skip = false
+                        --Print("Entering weapon dual wield",skip, pickedSlotID)
+                        _, equipped2ItemLink, _, equipped2iLvl, _, _, _, equipped2Location = GetItemInfo(GetInventoryItemLink("player",pickedSlotID+1))
+                    end
+
+                    --debugPrint("Is it seeing an empty slot?", skip)
+                    if pickediLvl <= equipped1iLvl or (skip == false and pickediLvl <= equipped1iLvl and pickediLvl <= equipped2iLvl) then
+                        self.lootLink = pickedUpLoot
+                        self.acquiredTextFrame.text:SetText(self.lootLink)
+                        local width = self.acquiredTextFrame.text:GetWidth()
+                        local height = self.acquiredTextFrame.text:GetHeight()
+                        --debugPrint("Width and Height of text for TTLF", width, height)
+                        TrapTradeLootFrame.acquiredTextFrame:SetSize(width,height)
+                        self.fromTable = false
+                        self:Show()
+                        self.acquiredTextFrame:HookScript("OnEnter",function()
+                            --debugPrint("On Enter Being Called. This is lootLink", TrapTradeLootFrame.lootLink)
+                            if(TrapTradeLootFrame.lootLink ~= nil) then
+                                GameTooltip:SetOwner(TrapTradeLootFrame.acquiredTextFrame.text, "ANCHOR_TOP")
+                                GameTooltip:SetHyperlink(TrapTradeLootFrame.lootLink)
+                                GameTooltip:Show()
+                            end
+                        end)
+
+                        TrapTradeLootFrame.acquiredTextFrame:HookScript("OnLeave",function()
+                            GameTooltip:Hide()
+                        end)
+                    end
+                end
+            end
+        else
+            local tradedLoot = string.match(text, "You receive item: (.+|r)") --Used by trading
+            if tradedLoot and IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
+                local alreadyAdded = false
+                local somethingAdded = false
+                for i = 1, #self.items, 1 do
+                    if self.items[i] and self.items[i] == tradedLoot then
+                        for j = 1, #TrapLootListFrame.PlayerLoot, 1 do
+                            --make sure it's not already on the list
+                            if tradedLoot == TrapLootListFrame.PlayerLoot[j].item and self.tradedFrom == TrapLootListFrame.PlayerLoot[j].sender then
+                                alreadyAdded = true
+                                break
+                            end
+                        end
+                        if not alreadyAdded then
+                            --debugPrint("Adding to table", self.items[i])
+                            table.insert(self.TradeTable, {["name"] = self.tradedFrom, ["item"] = self.items[i]})
+                            --debugPrint("Something added to table", self.TradeTable)
+                            somethingAdded = true
+                        end
+                        break
+                    end
+                end
+                if somethingAdded and not self:IsVisible() then
+                    --debugPrint("Loot Link pre-check", self.lootLink)
+                    self.lootLink = self.TradeTable[1].item
+                    --debugPrint("Loot Link post-check", self.lootLink)
+                    self.acquiredTextFrame.text:SetText(self.TradeTable[1].item)
                     local width = self.acquiredTextFrame.text:GetWidth()
                     local height = self.acquiredTextFrame.text:GetHeight()
                     --debugPrint("Width and Height of text for TTLF", width, height)
                     TrapTradeLootFrame.acquiredTextFrame:SetSize(width,height)
+                    self.fromTable = true
                     self:Show()
                     self.acquiredTextFrame:HookScript("OnEnter",function()
                         --debugPrint("On Enter Being Called. This is lootLink", TrapTradeLootFrame.lootLink)
-                        if(TrapTradeLootFrame.lootLink ~= nil) then
+                        if(TrapTradeLootFrame.TradeTable[1] ~= nil) then
                             GameTooltip:SetOwner(TrapTradeLootFrame.acquiredTextFrame.text, "ANCHOR_TOP")
-                            GameTooltip:SetHyperlink(TrapTradeLootFrame.lootLink)
+                            GameTooltip:SetHyperlink(TrapTradeLootFrame.TradeTable[1].item)
                             GameTooltip:Show()
                         end
                     end)
-                    
                     TrapTradeLootFrame.acquiredTextFrame:HookScript("OnLeave",function()
                         GameTooltip:Hide()
                     end)
                 end
             end
+        end
+        --debugPrint("END OF EVENT LOOT LINK: ", self.lootLink)
+    end
+
+    if ( event == "TRADE_ACCEPT_UPDATE") and not TrapRaidRollerHidePickupFrame then
+        local playerAccepted, targetAccepted = ...
+        --debugPrint("Event triggered: ", playerAccepted, targetAccepted)
+        if playerAccepted == 1 and IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
+            TrapTradeLootFrame.tradedFrom = GetUnitName("NPC",true)
+            --If the player is on the same server as you we need to add the server
+            if not string.match(self.tradedFrom, "(.+-.+)") then
+                local _,ownServer = UnitFullName("player",true)
+                self.tradedFrom = self.tradedFrom .. "-" .. ownServer
+            end
+            --debugPrint("Unit traded with you ", self.tradedFrom)
+            self.items[1] = GetTradeTargetItemLink(1)
+            self.items[2] = GetTradeTargetItemLink(2)
+            self.items[3] = GetTradeTargetItemLink(3)
+            self.items[4] = GetTradeTargetItemLink(4)
+            self.items[5] = GetTradeTargetItemLink(5)
+            self.items[6] = GetTradeTargetItemLink(6)
+            --debugPrint("Items: \n", self.items[1], "\n",self.items[2], "\n",self.items[3], "\n",self.items[4], "\n",self.items[5])
         end
     end
 end)
