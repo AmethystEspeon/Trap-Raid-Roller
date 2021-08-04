@@ -47,7 +47,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
     elseif msg == "help" or msg == "h" then
-        print("|cFFFFFF00Trap Raid Roller V2.0.2")
+        print("|cFFFFFF00Trap Raid Roller V2.0.3")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
         print("|cFF67BCFFShow Raid Roller -- |r/trr show")
@@ -119,8 +119,8 @@ function RaidRollerFrame:parseItemInfo(msg)
                 itemEdited = "Agility "
             end
 
-            if statTable.ITEM_MOD_INTELLIGENCE_SHORT ~= nil then
-                itemEdited = "Intelligence "
+            if statTable.ITEM_MOD_INTELLECT_SHORT ~= nil then
+                itemEdited = "Intellect "
             end
             --Get rid of the 's' at the end of the weapon type
             local weaponType,_,_,_,_,_ = string.match(itemSubType, "((%w-)(%-*)(%w-)(%s*)(%w+))s")
