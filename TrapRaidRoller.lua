@@ -734,7 +734,7 @@ TrapTradeLootFrame:SetScript("OnEvent", function(self,event,...)
                 local _, pickedItemLink, pickedItemQuality, pickediLvl, _, _, _, _, pickedLocation = GetItemInfo(pickedUpLoot)
 
                 --If the item isn't epic or higher, exit the script
-                if pickedItemQuality >= 4 then
+                if pickedItemQuality < 4 then
                     return
                 end
 
