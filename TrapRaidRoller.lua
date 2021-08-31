@@ -44,10 +44,24 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
         else
             TrapRaidRollerHideRolloutFrame = false
         end
+    elseif msg == "toggleColor"  or msg == "tc" then
+        --debugPrint("Dark color:", TrapRaidRollerDarkColor[1],TrapRaidRollerDarkColor[2],TrapRaidRollerDarkColor[3],TrapRaidRollerDarkColor[4])
+        --debugPrint("Is it right?:", TrapRaidRollerDarkColor[1] == 0.0588 and TrapRaidRollerDarkColor[2] == 0.0549 and TrapRaidRollerDarkColor[3] == 0.102 and TrapRaidRollerDarkColor[4] ==  0.85)
+        if TrapRaidRollerDarkColor[1] == 0.0588 and TrapRaidRollerDarkColor[2] == 0.0549 and TrapRaidRollerDarkColor[3] == 0.102 and TrapRaidRollerDarkColor[4] ==  0.85 then
+            TrapRaidRollerDarkColor = {0.0588, 0.102, 0.0549, 0.85}
+            TrapRaidRollerLightColor = {0.1388,0.182,0.1349,0.85}
+            TrapLootListFrame:checkLootFrame()
+            print("|cFFFFFF00TRR Loot List is now Green")
+        else
+            TrapRaidRollerDarkColor = {0.0588, 0.0549, 0.102, 0.85}
+            TrapRaidRollerLightColor = {0.1388,0.1349,0.182,0.85}
+            TrapLootListFrame:checkLootFrame()
+            print("|cFFFFFF00TRR Loot List is now Blue")
+        end
     elseif msg == "reset" then
         RaidRollerFrame:resetForRoll()
     elseif msg == "help" or msg == "h" then
-        print("|cFFFFFF00Trap Raid Roller V2.1.0")
+        print("|cFFFFFF00Trap Raid Roller V2.3.0")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide Raid Roller-- |r/trr")
         print("|cFF67BCFFShow Raid Roller -- |r/trr show")
@@ -56,6 +70,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
         print("|cFF67BCFFRoll out loot -- |r/trr [Link an item with shift+click]")
         print("|cFF67BCFFToggle popup of On Pickup frame -- |r/trr togglePickup")
         print("|cFF67BCFFToggle popup of Loot List frame -- |r/trr toggleLootList")
+        print("|cFF67BCFFToggle colors of Loot List between blue and green -- |r/trr toggleColor or /trr tc")
     else
         if IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
             RaidRollerFrame:resetForRoll()
@@ -245,7 +260,7 @@ function RaidRollerFrame:checkItemLocation(itemEquipLoc)
     --    itemTypeLocation = "Tabard"
     elseif itemEquipLoc == "INVTYPE_ROBE" then
         itemTypeLocation = "Robe"
-    elseif itemEquipLoc == "INVTYPE_WEAPON" or itemEquipLoc == "INVTYPE_2HWEAPON" then
+    elseif itemEquipLoc == "INVTYPE_WEAPON" or itemEquipLoc == "INVTYPE_2HWEAPON" or itemEquipLoc == "INVTYPE_RANGEDRIGHT" then
         itemTypeLocation = "Weapon"
     elseif itemEquipLoc == "INVTYPE_HOLDABLE" then
         itemTypeLocation = "Offhand"
@@ -339,6 +354,10 @@ end)
 
 --Roll Frame Creation
 function RaidRollerFrame:OnLoad()
+    if not TrapRaidRollerDarkColor then
+        TrapRaidRollerDarkColor = {0.0588, 0.0549, 0.102, 0.85}
+        TrapRaidRollerLightColor = {0.1388,0.1349,0.182,0.85}
+    end
     self.titleFrame = CreateFrame("Frame", nil, self)
     self.titleFrame:SetPoint("TOP",self,"TOP")
     self.titleFrame:SetSize(157,20)
@@ -437,7 +456,7 @@ function TrapLootListFrame:OnLoad()
     self.titleFrame.title = self.titleFrame:CreateFontString(nil,"ARTWORK","GameFontNormal",nil)
     self.titleFrame.title:SetPoint("TOP",self.titleFrame,"CENTER",0,5)
     self.titleFrame.title:SetText("TRR Loot List")
-    self:SetSize(450,430);
+    self:SetSize(450,330);
     self:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -300, -200);
     self.Background = self:CreateTexture(nil,"BACKGROUND");
     self.Background:SetAllPoints(self);
@@ -454,6 +473,19 @@ function TrapLootListFrame:OnLoad()
         self:Hide()
     end)
 
+    --Reset Button
+    self.resetButton = CreateFrame("Button",nil,self)
+    self.resetButton:SetNormalTexture("Interface\\PaperDollInfoFrame\\UI-GearManager-Undo")
+    self.resetButton:SetPoint("TOPLEFT",self,"TOPLEFT",2.2,-2.5)
+    self.resetButton:SetSize(18,18)
+    self.resetButton:SetScript('OnClick', function()
+        if #self.PlayerLoot > 0 then
+            for k in pairs(self.PlayerLoot) do
+                self.PlayerLoot[k] = nil
+            end
+            self:checkLootFrame()
+        end
+    end)
 
     self:RegisterEvent("CHAT_MSG_ADDON")
 end
@@ -470,8 +502,12 @@ TrapLootListFrame.RollButtons = {}
 TrapLootListFrame:SetScript("OnEvent",function(self,event,...)
     if( event == "CHAT_MSG_ADDON" ) then
         local recPrefix, text, _, sender = ...;
+        local rolledLoot, rolledPlayer
         if recPrefix == Prefix then
             if string.match(text, "add (.+)") then --If we're adding something, add it
+                if string.match(sender, "(.+-.+)") then
+                    sender = string.match(sender, "(.+)-")
+                end
                 self:addPlayerLoot(sender, string.match(text, "add (.+)"))
                 if IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) and not TrapRaidRollerHideRolloutFrame then
                     self:Show()
@@ -482,6 +518,17 @@ TrapLootListFrame:SetScript("OnEvent",function(self,event,...)
             if string.match(text, "roll (.+)") then --If someone rolled something out, reset the roll list
                 RaidRollerFrame:resetForRoll()
                 rerollReadyCheck = false
+                rolledLoot, rolledPlayer = string.match(text, "roll (|c.+|r), (.+)")
+                
+                --debugPrint("Entered loop to check player loot due to roll, Rolled loot:", rolledLoot, "Looted Player:", rolledPlayer)
+                for i = 1, #TrapLootListFrame.PlayerLoot, 1 do
+                    --debugPrint("Checking loot:", TrapLootListFrame.PlayerLoot[i].item, "Checking player:",TrapLootListFrame.PlayerLoot[i].sender)
+                    if rolledLoot == TrapLootListFrame.PlayerLoot[i].item and rolledPlayer == TrapLootListFrame.PlayerLoot[i].sender then
+                        --debugPrint("Found item")
+                        TrapLootListFrame.PlayerLoot[i].rolled = "yes"
+                    end
+                end
+                TrapLootListFrame:checkLootFrame()
                 C_Timer.After(2, function() rerollReadyCheck = true end)
             end
 
@@ -492,10 +539,11 @@ end)
 function TrapLootListFrame:addPlayerLoot(player, item)
     --debugPrint("player to add:", player)
     --debugPrint("item to add:", item)
-    if #self.PlayerLoot >= 8 then
+
+    if #self.PlayerLoot >= 6 then
         table.remove(TrapLootListFrame.PlayerLoot,1)
     end
-    table.insert(TrapLootListFrame.PlayerLoot, {["sender"] = player, ["item"] = item});
+    table.insert(TrapLootListFrame.PlayerLoot, {["sender"] = player, ["item"] = item, ["rolled"] = "No"});
     self:checkLootFrame()
 
 end
@@ -516,20 +564,23 @@ function TrapLootListFrame:checkLootFrame()
             self.RollButtons[#self.RollButtons]:SetPoint("LEFT", self.ButtonBackgrounds[#self.ButtonBackgrounds],"LEFT", 0,-4)
         end
     end
-    for i = #self.ListFrames, 1, -1 do
-        if self.ListFrames[i].nameString == nil then
+    if next(self.PlayerLoot) == nil then
+        for i = #self.ListFrames, 1, -1 do
             self.ListFrames[i]:Hide()
             self.ButtonBackgrounds[i]:Hide()
             self.RollButtons[i]:Hide()
         end
     end
     for i = 1, #self.PlayerLoot, 1 do
-        if i%2 == 0 then
-            self.ListFrames[i].Background:SetColorTexture(0.1388,0.1349,0.182,0.85)
-            self.ButtonBackgrounds[i].Background:SetColorTexture(0.1388,0.1349,0.182,0.85)
+        if self.PlayerLoot[i].rolled == "yes" then
+            self.ListFrames[i].Background:SetColorTexture(0.2,0.1,0.1,0.85)
+            self.ButtonBackgrounds[i].Background:SetColorTexture(0.2,0.1,0.1,0.85)
+        elseif i%2 == 0 then
+            self.ListFrames[i].Background:SetColorTexture(TrapRaidRollerLightColor[1],TrapRaidRollerLightColor[2],TrapRaidRollerLightColor[3],TrapRaidRollerLightColor[4])
+            self.ButtonBackgrounds[i].Background:SetColorTexture(TrapRaidRollerLightColor[1],TrapRaidRollerLightColor[2],TrapRaidRollerLightColor[3],TrapRaidRollerLightColor[4])
         else
-            self.ListFrames[i].Background:SetColorTexture(0.0588, 0.0549, 0.102, 0.85);
-            self.ButtonBackgrounds[i].Background:SetColorTexture(0.0588, 0.0549, 0.102, 0.85);
+            self.ListFrames[i].Background:SetColorTexture(TrapRaidRollerDarkColor[1],TrapRaidRollerDarkColor[2],TrapRaidRollerDarkColor[3],TrapRaidRollerDarkColor[4]);
+            self.ButtonBackgrounds[i].Background:SetColorTexture(TrapRaidRollerDarkColor[1],TrapRaidRollerDarkColor[2],TrapRaidRollerDarkColor[3],TrapRaidRollerDarkColor[4]);
 
         end
         self.ListFrames[i].nameString:SetText(self.PlayerLoot[i].sender)
@@ -539,6 +590,9 @@ function TrapLootListFrame:checkLootFrame()
             GameTooltip:SetHyperlink(self.PlayerLoot[i].item)
             GameTooltip:Show()
         end)
+        self.ListFrames[i]:Show()
+        self.ButtonBackgrounds[i]:Show()
+        self.RollButtons[i]:Show()
         
         TrapLootListFrame.ListFrames[i]:HookScript("OnLeave",function()
             GameTooltip:Hide()
@@ -550,7 +604,7 @@ function TrapLootListFrame:checkLootFrame()
                 PlaySound(846)
             elseif IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) and rerollReadyCheck then
                 RaidRollerFrame:parseItemInfo(self.PlayerLoot[i].item)
-                C_ChatInfo.SendAddonMessage(Prefix,"roll " .. self.PlayerLoot[i].item, "RAID")
+                C_ChatInfo.SendAddonMessage(Prefix,"roll " .. self.PlayerLoot[i].item .. ", " .. self.PlayerLoot[i].sender, "RAID")
             end
         end)
 
@@ -834,9 +888,8 @@ TrapTradeLootFrame:SetScript("OnEvent", function(self,event,...)
         if playerAccepted == 1 and IsInRaid() and (UnitIsGroupAssistant("player") or UnitIsGroupLeader("player")) then
             TrapTradeLootFrame.tradedFrom = GetUnitName("NPC",true)
             --If the player is on the same server as you we need to add the server
-            if not string.match(self.tradedFrom, "(.+-.+)") then
-                local _,ownServer = UnitFullName("player",true)
-                self.tradedFrom = self.tradedFrom .. "-" .. ownServer
+            if string.match(self.tradedFrom, "(.+-.+)") then
+                self.tradedFrom = string.match(self.tradedFrom, "(.+)-")
             end
             --debugPrint("Unit traded with you ", self.tradedFrom)
             self.items[1] = GetTradeTargetItemLink(1)
