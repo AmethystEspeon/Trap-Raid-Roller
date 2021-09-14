@@ -1,19 +1,19 @@
 <Bindings>
 <Binding name="SHOWHIDEROLLS" header="TRAPRAIDROLLERKEYBINDS">
-if RaidRollerFrame:IsVisible() then
-        RaidRollerFrame:Hide()
-    elseif not RaidRollerFrame:IsVisible() then
-        RaidRollerFrame:Show()
+if TrapRaidRoller:IsVisible() then
+        TrapRaidRoller:Hide()
+    elseif not TrapRaidRoller:IsVisible() then
+        TrapRaidRoller:Show()
     end
 </Binding>
 <Binding name="RESETROLLS">
-RaidRollerFrame:resetForRoll()
+TrapRaidRoller:resetForRoll()
 </Binding>
 <Binding name="SHOWHIDELIST">
-if TrapLootListFrame:IsVisible() then
-        TrapLootListFrame:Hide()
-    elseif not TrapLootListFrame:IsVisible() then
-            TrapLootListFrame:Show()
-        end
+if TrapLeadList:IsVisible() then
+    TrapLeadList:Hide()
+elseif not TrapLeadList:IsVisible() then
+    TrapLeadList:Show()
+end
 </Binding>
 </Bindings>
