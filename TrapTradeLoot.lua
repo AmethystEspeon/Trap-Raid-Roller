@@ -40,6 +40,7 @@ end
 function TrapTradeLoot:setupSettings()
     self:RegisterEvent("CHAT_MSG_LOOT")
     self:RegisterEvent("TRADE_ACCEPT_UPDATE")
+    self:RegisterEvent("UI_INFO_MESSAGE")
     self:Hide()
 end
 
@@ -86,7 +87,7 @@ function TrapTradeLoot:setupMainScripts()
 end
 
 function TrapTradeLoot:setupLootScripts(event,...)
-    if not event == "CHAT_MSG_LOOT" then
+    if event ~= "CHAT_MSG_LOOT" and event~="UI_INFO_MESSAGE" then
         return --Early out: Not the right event
     end
     if TrapRaidRollerHidePickupFrame then
@@ -101,6 +102,9 @@ function TrapTradeLoot:setupLootScripts(event,...)
 end
 
 function TrapTradeLoot:setupPickupScript(event,...)
+    if event ~= "CHAT_MSG_LOOT" then
+        return --Early out: Not right event
+    end
     local text = ...;
     local pickedUpLoot = string.match(text, "You receive loot: (.+|r)")
     if not pickedUpLoot then
@@ -257,6 +261,7 @@ function TrapTradeLoot:setCheckmarkScript(item,fromList)
             table.remove(self.tradedTable,1)
         end
         self:Hide()
+        self.tradedTable = self.tradedTable or {}
         if #self.tradedTable > 0 then
             self:editLootFrameForItem(self.tradedTable[1].item)
             self:editButtonsForItem(self.tradedTable[1].item,true)
@@ -280,49 +285,45 @@ function TrapTradeLoot:setxMarkScript(fromList)
 end
 
 function TrapTradeLoot:setupTradedScript(event,...)
-    local text = ...;
-    local tradedLoot = string.match(text, "You receive item: (.+|r)")
-    if not tradedLoot then
-        return --Early out: No traded loot
+    if event ~= "UI_INFO_MESSAGE" then
+        return --Early out: Not right event
     end
-    if not IsEquippableItem(tradedLoot) then
-        return --Early out: Not equippable
+    local errorType, message = ...;
+    if errorType ~= 229 then --Trade Complete
+        return --Early out: Not right ui message
     end
-    if not self:checkIfGoodQuality(tradedLoot) then
-        return --Early out: loot isn't high enough quality
-    end
-    if not self.items then
-        return --Early out: Not from a trade
-    end
-
+    self.items = self.items or {}
     local isInList = false
     local itemAddedToQueue = false
+    for i = 1, #self.items, 1 do
 
-    for i = 1, #self.items, 1 do --For each item in the trade window
-        if self.items[i] and self.items[i] == tradedLoot then --If the traded item is the same item from the trade window
+        if self.items[i] and IsEquippableItem(self.items[i]) and self:checkIfGoodQuality(self.items[i]) then
+            isInList = false
             if TrapLeadList.playerLoot then
-                for j = 1, #TrapLeadList.playerLoot, 1 do --Then check every piece of loot on the list
-
-                    if tradedLoot == TrapLeadList.playerLoot[j].item and self.tradedFrom == TrapLeadList.playerLoot[j].sender then
-                        isInList = true --If it is already on the list then end the loop
-                        break
-                    end
-                end
+                isInList = self:checkIfInList(self.items[i])
             end
-            if not isInList then --If it wasn't on the list then add it to the queue
+            if not isInList then
                 self.tradedTable = self.tradedTable or {}
                 table.insert(self.tradedTable, {["name"] = self.tradedFrom, ["item"] = self.items[i]})
                 itemAddedToQueue = true
             end
-            break
         end
     end
-    
     if itemAddedToQueue and not self:IsVisible() then
         self:editLootFrameForItem(self.tradedTable[1].item)
         self:editButtonsForItem(self.tradedTable[1].item,true)
         self:Show()
     end
+end
+
+function TrapTradeLoot:checkIfInList(item)
+    for i = 1, #TrapLeadList.playerLoot, 1 do
+        if item == TrapLeadList.playerLoot[i].item and self.tradedFrom == TrapLeadList.playerLoot[i].sender then
+            return true
+        end
+    end
+
+    return false
 end
 
 function TrapTradeLoot:setupTradeUpdaterScript(event,...)
@@ -347,7 +348,6 @@ function TrapTradeLoot:setupTradeUpdaterScript(event,...)
 
     local tradedFrom = GetUnitName("NPC",true)
     tradedFrom = TrapLeadList:addServerName(tradedFrom)
-
     self.tradedFrom = tradedFrom
     self.items = {}
     self.items[1] = GetTradeTargetItemLink(1)

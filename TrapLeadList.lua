@@ -56,12 +56,11 @@ TrapLeadList:SetScript("OnEvent",function(self,event,...)
         return
     end
     if event == "CHAT_MSG_ADDON" then
-        local recievedPrefix, text, _, sender = ...;
+        local receivedPrefix, text, _, sender = ...;
         sender = self:addServerName(sender) --COMPATABILITY: 2- has different senders
-        if not recievedPrefix == PREFIX then
+        if receivedPrefix ~= PREFIX then
             return --Early out: Not our addon talking
         end
-
         --Add something to the list
         if string.match(text, "add (.+)") then
             self:addLoot(sender,string.match(text, "add (.+)"))
@@ -103,6 +102,7 @@ function TrapLeadList:addLoot(sender,loot)
 end
 
 function TrapLeadList:changeRolledStatus(loot, player)
+    self.playerLoot = self.playerLoot or {}
     for i = 1, #self.playerLoot, 1 do
         if loot == self.playerLoot[i].item and player == self.playerLoot[i].sender then
             self.playerLoot[i].rolled = "yes"

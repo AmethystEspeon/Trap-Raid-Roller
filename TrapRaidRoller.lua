@@ -49,20 +49,6 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
         end
     elseif msg == "reset" then
         TrapRaidRoller:resetRolls()
-    elseif msg == "toggleColor" or msg == "tc" then
-        if TrapRaidRollerDarkColor[1] == 0.0588 and TrapRaidRollerDarkColor[2] == 0.0549 and TrapRaidRollerDarkColor[3] == 0.102 and TrapRaidRollerDarkColor[4] ==  0.85 then
-            TrapRaidRollerDarkColor = {0.0588, 0.102, 0.0549, 0.85}
-            TrapRaidRollerLightColor = {0.1388,0.182,0.1349,0.85}
-            TrapLeadList:updateVisual()
-            TrapRaidRoller:updateVisual()
-            print("|cFFFFFF00TRR Lists are now Green")
-        else
-            TrapRaidRollerDarkColor = {0.0588, 0.0549, 0.102, 0.85}
-            TrapRaidRollerLightColor = {0.1388,0.1349,0.182,0.85}
-            TrapLeadList:updateVisual()
-            TrapRaidRoller:updateVisual()
-            print("|cFFFFFF00TRR Loots are now Blue")
-        end
     elseif msg == "" then
         if not TrapRaidRoller:IsVisibile() and not TrapLeadList:IsVisible() then
             TrapRaidRoller:Show()
@@ -71,6 +57,14 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
             TrapRaidRoller:Hide()
             TrapLeadList:Hide()
         end
+    elseif msg == "h" or msg == "help" then
+        print("|cFFFFFF00Trap Raid Roller V2.7.3")
+        print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
+        print("|cFF67BCFFShow or Hide All Windows -- |r/trr")
+        print("|cFF67BCFFReset Roll window -- |r/trr reset")
+        print("|cFF67BCFFRoll out loot -- |r/trr [Link an item with shift+click]")
+        print("|cFF67BCFFToggle colors of Loot List between blue and green -- |r/trr toggleColor or /trr tc")
+        print("|cFF67BCFFOther options are in the addons -> Trap Raid Roller tab of the interface!")
     else --Send something for roll
         local rollMessage, statMessage = TrapRaidRoller:getMessages(msg)
         SendChatMessage(rollMessage,"RAID_WARNING")
@@ -374,6 +368,9 @@ function TrapRaidRoller:setButtonTextures(button,buttonPath)
 end
 
 function TrapRaidRoller:scrollUp()
+    if not self.scollOffset then
+        return --Early out: Not initalized yet, nothing to scroll
+    end
     if self.scrollOffset > 0 and #self.rollFrames > #self.allRolls - 8 then
         self.scrollOffset = self.scrollOffset - 1
         self:assignFrames()
@@ -381,6 +378,9 @@ function TrapRaidRoller:scrollUp()
 end
 
 function TrapRaidRoller:scrollDown()
+    if not self.scollOffset then
+        return --Early out: Not initalized yet, nothing to scroll
+    end
     if self.scrollOffset < #self.allRolls - 8 then
         self.scrollOffset = self.scrollOffset + 1
         self:assignFrames()
@@ -455,8 +455,7 @@ end
 
 function TrapRaidRoller:checkIfWeapon(item)
     --debugPrint("item:",item)
-    local _,_,_,_,_, _,_,_,_,itemEquipLocation = GetItemInfo(item)
-
+    local _,_,_,_,_, _,_,_,itemEquipLocation = GetItemInfo(item)
     if TrapRaidRoller:listContains(WEAPON_INVTYPES,itemEquipLocation) then
         return true
     end
