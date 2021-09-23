@@ -1,8 +1,8 @@
 ## Interface: 90005
 ## Title: Trap Raid Roller
 ## Notes: Provides an easy to use way to post items for roll and then check track the raid's rolls for it
-## Version: 3.0.0
-## SavedVariables: TrapRaidRollerHidePickupFrame, TrapRaidRollerHideRolloutFrame, TrapRaidRollerHideLeadFrame, TrapRaidRollerDarkColor,TrapRaidRollerLightColor, TrapRaidRollerPanelColor
+## Version: 2.7.6
+## SavedVariables: TrapRaidRollerHidePickupFrame, TrapRaidRollerHideRolloutFrame,TrapRaidRollerDarkColor,TrapRaidRollerLightColor, TrapRaidRollerPanelColor
 
 TrapRaidRoller.lua
 TrapLeadList.lua

@@ -50,7 +50,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
     elseif msg == "reset" then
         TrapRaidRoller:resetRolls()
     elseif msg == "" then
-        if not TrapRaidRoller:IsVisibile() and not TrapLeadList:IsVisible() then
+        if not TrapRaidRoller:IsVisible() and not TrapLeadList:IsVisible() then
             TrapRaidRoller:Show()
             TrapLeadList:Show()
         else
@@ -58,7 +58,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
             TrapLeadList:Hide()
         end
     elseif msg == "h" or msg == "help" then
-        print("|cFFFFFF00Trap Raid Roller V2.7.3")
+        print("|cFFFFFF00Trap Raid Roller V2.7.6")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide All Windows -- |r/trr")
         print("|cFF67BCFFReset Roll window -- |r/trr reset")
@@ -410,7 +410,9 @@ function TrapRaidRoller:getStatMessage(item)
     if message then
         return message --Early out: It's a token, so we just need the classes
     end
-
+    if not IsEquippableItem(item) then
+        return "" --Early out: Not an equippable item
+    end
     if self:checkIfWeapon(item) then
         local mainStat = self:getMainStat(item)
         local weaponType = self:getWeaponType(item)
@@ -419,7 +421,7 @@ function TrapRaidRoller:getStatMessage(item)
 
         return mainStat .. " " .. weaponType .. " " .. secondaries .. " " .. tertiaries
     end
-
+    
     --If it's not a weapon or token, it's a normal piece of gear
     local itemType = self:getItemType(item)
     local itemSlot = self:getItemSlotName(item)
