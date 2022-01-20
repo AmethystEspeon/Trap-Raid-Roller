@@ -74,6 +74,9 @@ TrapLeadList:SetScript("OnEvent",function(self,event,...)
         if string.match(text, "roll (.+)") then
             --Prepare for roll stuff
             TrapRaidRoller:resetRolls();
+            if TrapRaidRollerHeyListen then
+                PlaySoundFile("Interface\\AddOns\\TrapRaidRoller\\hey_listen.mp3", "Master")
+            end
             self.readyToRoll = false --Too soon to roll again
 
             --Get roll info to red out what was rolled

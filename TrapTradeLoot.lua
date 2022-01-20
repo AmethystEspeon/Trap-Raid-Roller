@@ -144,14 +144,14 @@ function TrapTradeLoot:compareLootToEquipped(loot)
     local _,_,_,equippediLvl,_,  _,_,_,equippedLocation = GetItemInfo(GetInventoryItemLink("player",acquiredSlotID))
     local checkSecondSlotFlag = self:checkIfSecondSlot(loot,acquiredLocation,equippedLocation)
 
-    local equippedItemIsAtLeastEqual
+    local equippedItemIsBetter
     if acquirediLvl > equippediLvl then
-        equippedItemIsAtLeastEqual = false
+        equippedItemIsBetter = false
     else
-        equippedItemIsAtLeastEqual = true
+        equippedItemIsBetter = true
     end
 
-    return equippedItemIsAtLeastEqual, checkSecondSlotFlag
+    return equippedItemIsBetter, checkSecondSlotFlag
 end
 
 function TrapTradeLoot:getItemSlotID(location)
@@ -225,7 +225,7 @@ function TrapTradeLoot:compareLootToSecond(loot)
     local _,_,_,equippediLvl = GetItemInfo(GetInventoryItemLink("player",acquiredSlotID+1))
 
     local equippedItemIsBetter
-    if acquirediLvl >= equippediLvl then
+    if acquirediLvl > equippediLvl then
         equippedItemIsBetter = false
     else
         equippedItemIsBetter = true

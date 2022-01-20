@@ -18,11 +18,12 @@ TrapInterfaceAddonPanel:SetScript("OnEvent", function(self,event,...)
     end
     local addon = ...
     if addon ~= "TrapRaidRoller" then
-        return --Not right
+        return --Not right addon
     end
     self:setupDefaults()
-    self:setupInitialCheck(self.showHide.tradeList.button, TrapRaidRollerHidePickupFrame)
-    self:setupInitialCheck(self.showHide.leadList.button, TrapRaidRollerHideRolloutFrame)
+    self:setupInitialCheck(self.showHide.tradeList.button, TrapRaidRollerHidePickupFrame,true)
+    self:setupInitialCheck(self.showHide.leadList.button, TrapRaidRollerHideRolloutFrame,true)
+    self:setupInitialCheck(self.showHide.heyListen.button, TrapRaidRollerHeyListen,false)
     UIDropDownMenu_SetText(self.colorMenu.dropdownMenu,TrapRaidRollerPanelColor)
 end)
 
@@ -98,15 +99,19 @@ function InitalizeDropdownList(frame,level,menuList)
     UIDropDownMenu_AddButton(info)
 end
 
+--Need to rename this. Isn't just show/hide options anymore
 function TrapInterfaceAddonPanel:setupShowHideOptions()
     self.showHide = {}
     self.showHide.tradeList = {}
     self.showHide.leadList = {}
+    self.showHide.heyListen = {}
     self:createTextAndButtons(self.showHide.tradeList,"Pop up Roll Out confirmation on Loot Pickup")
     self:createTextAndButtons(self.showHide.leadList, "Pop up Lead List as Leadership")
+    self:createTextAndButtons(self.showHide.heyListen, "Play 'Hey, listen!' when something is rolled out")
     
     self:positionTextButtonPair(self.showHide.tradeList,nil)
     self:positionTextButtonPair(self.showHide.leadList, self.showHide.tradeList)
+    self:positionTextButtonPair(self.showHide.heyListen, self.showHide.leadList)
 
     self:setupButtonScripts()
 end
@@ -149,13 +154,29 @@ function TrapInterfaceAddonPanel:setupButtonScripts()
             TrapRaidRollerHideRolloutFrame = false
         end
     end)
+
+    self.showHide.heyListen.button:HookScript("OnClick", function()
+        if not TrapRaidRollerHeyListen then
+            TrapRaidRollerHeyListen = true
+        else
+            TrapRaidRollerHeyListen = false
+        end
+    end)
 end
 
-function TrapInterfaceAddonPanel:setupInitialCheck(button, variable)
-    if variable then
-        button:SetChecked(false)
+function TrapInterfaceAddonPanel:setupInitialCheck(button, variable, defaultOn)
+    if defaultOn then
+        if variable then
+            button:SetChecked(false)
+        else
+            button:SetChecked(true)
+        end
     else
-        button:SetChecked(true)
+        if variable then
+            button:SetChecked(true)
+        else
+            button:SetChecked(false)
+        end
     end
 end
 

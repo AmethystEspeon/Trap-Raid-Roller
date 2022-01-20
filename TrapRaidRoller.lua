@@ -21,7 +21,7 @@ TrapRaidRoller.START_Y = -200;
 --Colors
 TrapRaidRoller.BACKGROUND_COLORS = {0.0588, 0.0549, 0.102, 0.85}
 
-local WEAPON_INVTYPES = {"INVTYPE_WEAPON","INVTYPE_RANGED","INVTYPE_2HWEAPON","INVTYPE_RANGEDRIGHT"}
+local WEAPON_INVTYPES = {"INVTYPE_WEAPON","INVTYPE_RANGED","INVTYPE_2HWEAPON","INVTYPE_RANGEDRIGHT", "INVTYPE_SHIELD"}
 local NO_TYPE_ITEMSUBTYPES = {"INVTYPE_BAG","INVTYPE_TABARD","INVTYPE_SHIRT","INVTYPE_CLOAK", "INVTYPE_SHIELD","INVTYPE_HOLDABLE"}
 
 BINDING_HEADER_TRAPRAIDROLLERKEYBINDS = "Trap Raid Roller";
@@ -58,7 +58,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
             TrapLeadList:Hide()
         end
     elseif msg == "h" or msg == "help" then
-        print("|cFFFFFF00Trap Raid Roller V2.7.6")
+        print("|cFFFFFF00Trap Raid Roller V2.7.7")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide All Windows -- |r/trr")
         print("|cFF67BCFFReset Roll window -- |r/trr reset")
@@ -492,6 +492,9 @@ end
 function TrapRaidRoller:getWeaponType(item)
     local _,_,_,_,_, _,itemSubType = GetItemInfo(item)
     local weaponType = string.match(itemSubType, "((%w-)(%-*)(%w-)(%s*)(%w+))s")
+    if weaponType == nil then
+        weaponType = string.match(itemSubType, "(%w+)s")
+    end
     if weaponType == "Stave" then
         weaponType = "Staff"
     end
