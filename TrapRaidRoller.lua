@@ -58,7 +58,7 @@ SlashCmdList["TRAPRAIDROLLER"] = function(msg)
             TrapLeadList:Hide()
         end
     elseif msg == "h" or msg == "help" then
-        print("|cFFFFFF00Trap Raid Roller V2.7.7")
+        print("|cFFFFFF00Trap Raid Roller V2.8.1")
         print("|cFF67BCFFShow this dialogue -- |r/trr h or /trr help")
         print("|cFF67BCFFShow or Hide All Windows -- |r/trr")
         print("|cFF67BCFFReset Roll window -- |r/trr reset")
@@ -368,7 +368,7 @@ function TrapRaidRoller:setButtonTextures(button,buttonPath)
 end
 
 function TrapRaidRoller:scrollUp()
-    if not self.scollOffset then
+    if not self.scrollOffset then
         return --Early out: Not initalized yet, nothing to scroll
     end
     if self.scrollOffset > 0 and #self.rollFrames > #self.allRolls - 8 then
@@ -378,7 +378,7 @@ function TrapRaidRoller:scrollUp()
 end
 
 function TrapRaidRoller:scrollDown()
-    if not self.scollOffset then
+    if not self.scrollOffset then
         return --Early out: Not initalized yet, nothing to scroll
     end
     if self.scrollOffset < #self.allRolls - 8 then
@@ -433,6 +433,16 @@ end
 
 function TrapRaidRoller:checkItemToken(item)
     local itemName = GetItemInfo(item)
+
+---------------------------------------------------------------------------
+------------------------TOKENS---------------------------------------------
+---------------------------------------------------------------------------
+
+    --Shadowlands
+
+    ------
+    ------Castle Nathria
+    ------
     if itemName == "Mystic Anima Spherule" then --If it's a token
         return "Hunter/Mage/Druid Mainhand"
 
@@ -450,8 +460,76 @@ function TrapRaidRoller:checkItemToken(item)
 
     elseif itemName == "Zenith Anima Spherule" then
         return "Warrior/Rogue/Monk Mainhand"
-    end
 
+    ------
+    ------Sepulcher of the First Ones
+    ------
+ 
+    --DK/Lock/DH
+    elseif itemName == "Dreadful Chest Module" then
+        return "Death Knight/Warlock/Demon Hunter Chest"
+
+    elseif itemName == "Dreadful Hand Module" then
+        return "Death Knight/Warlock/Demon Hunter Gloves"
+
+    elseif itemName == "Dreadful Helm Module" then
+        return "Death Knight/Warlock/Demon Hunter Helmet"
+        
+    elseif itemName == "Dreadful Leg Module" then
+        return "Death Knight/Warlock/Demon Hunter Pants"
+
+    elseif itemName == "Dreadful Shoulder Module" then
+        return "Death Knight/Warlock/Demon Hunter Shoulders"
+    
+    --Hunter/Mage/Druid
+    elseif itemName == "Mystic Chest Module" then
+        return "Hunter/Mage/Druid Chest"
+
+    elseif itemName == "Mystic Hand Module" then
+        return "Hunter/Mage/Druid Gloves"
+
+    elseif itemName == "Mystic Helm Module" then
+        return "Hunter/Mage/Druid Helmet"
+    
+    elseif itemName == "Mystic Leg Module" then
+        return "Hunter/Mage/Druid Pants"
+
+    elseif itemName == "Mystic Shoulder Module" then
+        return "Hunter/Mage/Druid Shoulders"
+    
+    --Paladin/Priest/Shaman
+    elseif itemName == "Venerated Chest Module" then
+        return "Paladin/Priest/Shaman Chest"
+
+    elseif itemName == "Venerated Hand Module" then
+        return "Paladin/Priest/Shaman Gloves"
+
+    elseif itemName == "Venerated Helm Module" then
+        return "Paladin/Priest/Shaman Helmet"
+
+    elseif itemName == "Venerated Leg Module" then
+        return "Paladin/Priest/Shaman Pants"
+
+    elseif itemName == "Venerated Shoulder Module" then
+        return "Paladin/Priest/Shaman Shoulders"
+
+    --Warrior/Rogue/Monk
+    elseif itemName == "Zenith Chest Module" then
+        return "Warrior/Rogue/Monk Chest"
+
+    elseif itemName == "Zenith Hand Module" then
+        return "Warrior/Rogue/Monk Gloves"
+
+    elseif itemName == "Zenith Helm Module" then
+        return "Warrior/Rogue/Monk Helmet"
+
+    elseif itemName == "Zenith Leg Module" then
+        return "Warrior/Rogue/Monk Pants"
+
+    elseif itemName == "Zenith Shoulder Module" then
+        return "Warrior/Rogue/Monk Shoulders"
+    end
+    
     return nil --if it's not a token
 end
 
@@ -498,7 +576,9 @@ function TrapRaidRoller:getWeaponType(item)
     if weaponType == "Stave" then
         weaponType = "Staff"
     end
-
+    if weaponType == "Fi" then
+        weaponType = "Fist Weapon"
+    end
     return weaponType
 end
 
@@ -633,7 +713,7 @@ function TrapRaidRoller:getItemSlotName(item)
     elseif itemEquipLocation == "INVTYPE_ROBE" then
         return "Robe"
     elseif itemEquipLocation == "INVTYPE_HOLDABLE" then
-        return "Offhand? (Need confirmation)"
+        return "Offhand"
     elseif itemEquipLocation == "INVTYPE_RANGEDRIGHT" then
         return "Ranged right? (What is this?)"
     elseif itemEquipLocation == "INVTYPE_QUIVER" then

@@ -272,11 +272,11 @@ end
 
 function TrapTradeLoot:setxMarkScript(fromList)
     self.xMark:SetScript("OnClick", function()
-        if fromList then
+        if fromList and self.tradedTable then
             table.remove(self.tradedTable,1)
         end
         self:Hide()
-        if #self.tradedTable > 0 then
+        if self.tradedTable and #self.tradedTable > 0 then
             self:editLootFrameForItem(self.tradedTable[1].item)
             self:editButtonsForItem(self.tradedTable[1].item,true)
             self:Show()
