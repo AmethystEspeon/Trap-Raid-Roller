@@ -7,7 +7,7 @@ if TrapRaidRoller:IsVisible() then
     end
 </Binding>
 <Binding name="RESETROLLS">
-TrapRaidRoller:resetForRoll()
+TrapRaidRoller:resetRolls()
 </Binding>
 <Binding name="SHOWHIDELIST">
 if TrapLeadList:IsVisible() then
